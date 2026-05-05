@@ -27,12 +27,16 @@ class App:
             if os.path.exists(filename):
                 with open(filename, "r", encoding="utf-8") as f:
                     return json.load(f)
-        except: pass
+        except Exception as e:
+            messagebox.showerror("Ошибка", f"Не удалось загрузить историю: {e}")
         return []
     
     def save_json(self, filename, data):
-        with open(filename, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
+        try:
+            with open(filename, "w", encoding="utf-8") as f:
+                json.dump(data, f, ensure_ascii=False, indent=2)
+        except Exception as e:
+            messagebox.showerror("Ошибка", f"Не удалось сохранить: {e}")
     
     def init_ui(self):
         ttk.Label(self.win, text="Random Task Generator", 
@@ -46,10 +50,8 @@ class App:
         self.filter.set("Все")
         self.filter.pack(side="left", padx=5)
         
-        ttk.Button(self.win, text="Сгенерировать", 
-                   command=self.generate).pack(pady=5)
-        self.result = ttk.Label(self.win, text="", font=("Arial", 11), 
-                                wraplength=400)
+        ttk.Button(self.win, text="Сгенерировать", command=self.generate).pack(pady=5)
+        self.result = ttk.Label(self.win, text="", font=("Arial", 11), wraplength=400)
         self.result.pack(pady=10)
         
         f2 = ttk.LabelFrame(self.win, text="Новая задача")
@@ -57,10 +59,9 @@ class App:
         
         self.entry_task = ttk.Entry(f2, width=30)
         self.entry_task.pack(pady=5)
-        self.entry_type = ttk.Entry(f2, width=30)
+        self.entry_type = ttk.Combobox(f2, values=["учёба", "спорт", "работа"], width=28)
         self.entry_type.pack(pady=5)
-        ttk.Button(f2, text="Добавить", 
-                   command=self.add_task).pack(pady=5)
+        ttk.Button(f2, text="Добавить", command=self.add_task).pack(pady=5)
         
         ttk.Label(self.win, text="История:").pack()
         self.hist = tk.Text(self.win, height=12, width=60)
@@ -70,16 +71,13 @@ class App:
     def generate(self):
         f = self.filter.get()
         tasks = self.tasks if f == "Все" else [t for t in self.tasks if t["type"] == f]
-        
         if not tasks:
             messagebox.showwarning("Ошибка", f"Нет задач типа '{f}'")
             return
-        
         task = random.choice(tasks)
         self.result.config(text=f"Задача: {task['task']}\nТип: {task['type']}")
         self.history.append({
-            "task": task["task"], 
-            "type": task["type"],
+            "task": task["task"], "type": task["type"],
             "time": datetime.now().strftime("%d.%m.%Y %H:%M")
         })
         self.save_json("history.json", self.history)
@@ -88,14 +86,12 @@ class App:
     def add_task(self):
         task = self.entry_task.get().strip()
         ttype = self.entry_type.get().strip()
-        
         if not task or not ttype:
             messagebox.showerror("Ошибка", "Поля не могут быть пустыми!")
             return
-        
         self.tasks.append({"task": task, "type": ttype})
         self.entry_task.delete(0, tk.END)
-        self.entry_type.delete(0, tk.END)
+        self.entry_type.set("")
         messagebox.showinfo("Готово", f"Задача '{task}' добавлена")
     
     def update_hist(self):
@@ -110,4 +106,4 @@ class App:
         self.win.mainloop()
 
 if __name__ == "__main__":
-App().run()
+    App().run()
